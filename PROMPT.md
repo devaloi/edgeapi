@@ -1,8 +1,8 @@
-# Build agentforge — Multi-Agent Orchestration Framework
+# Build edgeapi — Edge-First REST API with Hono
 
-You are building a **portfolio project** for a Senior AI Engineer's public GitHub. It must be impressive, clean, and production-grade. This is the **flagship AI project** in the entire portfolio — it needs to be the most technically impressive piece. Read these docs before writing any code:
+You are building a **portfolio project** for a Senior AI Engineer's public GitHub. It must be impressive, clean, and production-grade. Read these docs before writing any code:
 
-1. **`A09-go-multi-agent.md`** — Complete project spec: architecture, agent types, tool definitions, DAG execution, shared memory, supervisor flow, YAML configuration, CLI, commit plan. This is your primary blueprint. Follow it phase by phase.
+1. **`H01-hono-edge-api.md`** — Complete project spec: architecture, phases, API reference, commit plan. This is your primary blueprint. Follow it phase by phase.
 2. **`github-portfolio.md`** — Portfolio goals and Definition of Done (Level 1 + Level 2). Understand the quality bar.
 3. **`github-portfolio-checklist.md`** — Pre-publish checklist. Every item must pass before you're done.
 
@@ -11,52 +11,44 @@ You are building a **portfolio project** for a Senior AI Engineer's public GitHu
 ## Instructions
 
 ### Read first, build second
-Read all three docs completely before writing a single line of code. This is a complex system with many interacting parts. Understand the agent execution loop (prompt → LLM → tool call → result → repeat), the supervisor pattern (plan → delegate → synthesize), the DAG executor (topological sort, parallel execution), and the shared memory model (agents collaborate through a key-value store). Internalize the full architecture before you start.
+Read all three docs completely before writing a single line of code. Understand Hono's middleware model, the Zod-OpenAPI integration, the multi-runtime architecture, and the quality expectations.
 
 ### Follow the phases in order
-The project spec has 8 phases. This is an L-size project — do them in strict order:
-1. **Foundation & Types** — project setup, core types (Message, ToolCall, SubTask, AgentConfig), YAML config loader
-2. **LLM Providers & History** — provider interface, OpenAI/Anthropic/Ollama implementations, conversation history with token budget trimming
-3. **Tool System & Shared Memory** — tool interface and registry with JSON Schema, all built-in tools, shared memory store with agent attribution
-4. **Agent Execution Loop** — core loop (prompt → LLM → tool call → result → repeat), specialized agent constructors
-5. **Planning & DAG Execution** — DAG data structure with topological sort, task planner (LLM-powered decomposition), DAG executor with parallel execution
-6. **Supervisor & Synthesis** — supervisor agent orchestrating the full flow, result synthesizer, structured observability logging
-7. **CLI & Examples** — cobra CLI with run/list/validate commands, example programs, integration tests
-8. **Documentation & Polish** — YAML config files, comprehensive README, final lint and checks
+The project spec has 6 phases. Do them in order:
+1. **Project Setup + App Skeleton** — Hono app, error handling, health checks
+2. **Database + Auth** — SQLite, JWT, auth routes, auth middleware
+3. **Bookmark CRUD** — service layer, OpenAPI-defined routes, pagination
+4. **Rate Limiting + Middleware Polish** — sliding window limiter, structured logger
+5. **Testing + Multi-Runtime** — Vitest integration tests, Node/Bun/Workers entry points
+6. **Documentation** — README with API reference and deployment guide
 
 ### Commit frequently
-Follow the commit plan in the spec (27 commits). Use **conventional commits**. Each commit should be a logical unit. This is an L-size project — the commit history should tell the story of building a complex system incrementally.
+Follow the commit plan in the spec. Use **conventional commits** (`feat:`, `test:`, `refactor:`, `docs:`, `chore:`). Each commit should be a logical unit.
 
 ### Quality non-negotiables
-- **The agent loop must be clean and readable.** A reader should understand the entire agent pattern from `loop.go`. The loop itself should be ~30-50 lines. All complexity is in the supporting types, not the loop.
-- **The supervisor is the star.** The plan → delegate → execute → synthesize flow must be clear, well-logged, and testable. A recruiter reading the supervisor code should immediately see you understand multi-agent orchestration.
-- **DAG execution is correct.** Topological sort, cycle detection, parallel execution of independent tasks, dependency-respecting ordering. This is a graph algorithm interview question made real.
-- **Shared memory enables collaboration.** Agents don't just run in isolation — the researcher stores findings, the coder reads them, the reviewer reads the code. This collaboration through shared memory is what makes this a multi-agent system, not just multiple single agents.
-- **Provider abstraction is clean.** OpenAI, Anthropic, and Ollama all implement the same interface. Switching providers is a config change. The agent doesn't know which provider it's using.
-- **Tool system uses JSON Schema.** Every tool has a formal parameter schema. The agent sends tool schemas to the LLM. Arguments are validated before execution. This mirrors how OpenAI and Anthropic actually define tools.
-- **Mock provider for all tests.** No test hits a real LLM API. The mock provider returns scripted responses including tool calls. This makes tests fast, deterministic, and CI-friendly.
-- **Token budget management.** Each agent has a configurable token budget. When history approaches the limit, oldest non-system messages are trimmed. This prevents runaway costs and context overflow.
-- **Observability tells the story.** Every agent decision, tool call, and result is logged with structured data. The execution trace can be printed as a timeline. A debugging developer can follow exactly what happened.
-- **YAML configuration is the control plane.** Agents, tools, and providers are defined in YAML. You can add a new agent by adding a YAML block — no code changes. This shows production-grade configurability.
-- **CLI output is beautiful.** The execution output shown in the spec (with emojis, progress, timing) must look professional in the terminal. This is the first thing someone runs.
-- **Lint clean.** `golangci-lint run` and `go vet` must pass with zero warnings.
+- **TypeScript strict mode.** `strict: true` in tsconfig. No `any` types anywhere. Full type inference from Zod schemas.
+- **Zod-OpenAPI integration.** Every route defined with `createRoute()` from `@hono/zod-openapi`. Request and response schemas validated automatically.
+- **RFC 7807 error responses.** All errors return problem details format. No raw strings or ad-hoc error objects.
+- **Edge-compatible libraries.** Use `jose` for JWT (not jsonwebtoken — it needs Node crypto). Use Web Crypto where possible.
+- **Middleware composability.** Each middleware is independent, testable, and configurable. No global state.
+- **Rate limiting correctness.** Sliding window with proper header emission. Must handle concurrent requests safely.
+- **Lint clean.** ESLint must pass with zero warnings. TypeScript must compile with zero errors.
+- **Tests with Hono test client.** Use `app.request()` — no HTTP server needed. Fast, deterministic tests.
 
 ### What NOT to do
-- Don't use LangChain, LangGraph, CrewAI, or any agent framework. This IS the framework, built from primitives. Using an existing framework defeats the entire purpose.
-- Don't use LLM SDKs (openai-go, anthropic-go). Raw `net/http` calls to the APIs. This shows you understand the underlying protocols.
-- Don't hardcode agent definitions in Go. Agents must be configurable via YAML. The code provides the engine; YAML provides the configuration.
-- Don't skip the DAG executor. Running sub-tasks sequentially is trivial. The DAG with parallel execution and dependency resolution is what makes this impressive.
-- Don't skip shared memory. Without it, this is just "run 4 agents independently." Shared memory is what makes agents collaborate.
-- Don't make the agent loop a monolith. The loop, tool execution, history management, and provider calls should be separate, testable units.
-- Don't leave `// TODO` or `// FIXME` comments anywhere.
-- Don't commit `.env` files or any API keys.
+- Don't use Express-style middleware patterns. Hono has its own middleware API — learn it.
+- Don't use `jsonwebtoken` or `bcrypt` native packages. They won't work on edge runtimes. Use `jose` and Web Crypto / `bcryptjs`.
+- Don't skip OpenAPI schema generation. The auto-generated spec is a key differentiator.
+- Don't hardcode environment values. Use Hono's typed env bindings.
+- Don't leave Swagger UI integration as a stub. Either implement it or remove the route.
+- Don't ignore the multi-runtime story. The app must at minimum run on Node.js and Bun.
 
 ---
 
 ## GitHub Username
 
-The GitHub username is **devaloi**. For Go module paths, use `github.com/devaloi/agentforge`. All internal imports must use this module path.
+The GitHub username is **devaloi**. The npm package scope is not needed (not publishing to npm). Use `edgeapi` as the project name in package.json.
 
 ## Start
 
-Read the three docs. Then begin Phase 1 from `A09-go-multi-agent.md`.
+Read the three docs. Then begin Phase 1 from `H01-hono-edge-api.md`.
