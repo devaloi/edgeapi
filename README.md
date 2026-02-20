@@ -1,5 +1,7 @@
 # edgeapi
 
+[![CI](https://github.com/devaloi/edgeapi/actions/workflows/ci.yml/badge.svg)](https://github.com/devaloi/edgeapi/actions/workflows/ci.yml)
+
 A type-safe, edge-first REST API built with [Hono](https://hono.dev/). Features structured routing, a composable middleware stack, Zod request validation, and a pluggable storage adapter pattern — ready for Cloudflare Workers, Deno Deploy, Bun, or Node.js.
 
 ## Architecture
